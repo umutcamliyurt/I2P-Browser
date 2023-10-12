@@ -11,6 +11,7 @@ from PyQt5.QtCore import QUrl
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
+from urllib.parse import urlsplit
 
 class NWUrlRequestInterceptor(QWebEngineUrlRequestInterceptor):
     def __init__(self, headers):
@@ -56,9 +57,6 @@ class MainWindow(QMainWindow):
         # Disables file access
         settings.setAttribute(QWebEngineSettings.LocalContentCanAccessFileUrls, False)
         settings.setAttribute(QWebEngineSettings.LocalContentCanAccessRemoteUrls, False)
-
-        # Sets the initial URL
-        self.browser.setUrl(QUrl('https://i2pengine.com'))
 
         # Sets custom User-Agent string
         user_agent = "Mozilla/5.0 (Windows NT 10.0; rv:102.0) Gecko/20100101 Firefox/102.0"
@@ -113,15 +111,12 @@ class MainWindow(QMainWindow):
         # Connects the URL change signal to update the URL bar
         self.browser.urlChanged.connect(self.update_url)
 
-        # Sets up a proxy (Initially disabled)
-        self.proxy_enabled = False
+        # Sets up a proxy (Initially enabled)
+        self.proxy_enabled = True
         self.proxy = QNetworkProxy()
         self.proxy.setType(QNetworkProxy.HttpProxy)
         self.proxy.setHostName("127.0.0.1")
         self.proxy.setPort(4444)
-
-        # Updates proxy status initially
-        self.update_proxy_status()
 
         # Initialize the NWUrlRequestInterceptor with default headers
         default_headers = [
@@ -132,6 +127,12 @@ class MainWindow(QMainWindow):
         self.request_interceptor = NWUrlRequestInterceptor(default_headers)
         self.browser.page().profile().setUrlRequestInterceptor(self.request_interceptor)
 
+        # Enables the proxy initially and set the checkbox state
+        self.toggle_proxy(Qt.Checked)
+
+        # Sets the initial URL
+        self.browser.setUrl(QUrl('http://legwork.i2p/'))
+
     def toggle_proxy(self, state):
         if state == Qt.Checked:
             QNetworkProxy.setApplicationProxy(self.proxy)
@@ -140,9 +141,17 @@ class MainWindow(QMainWindow):
             QNetworkProxy.setApplicationProxy(QNetworkProxy())
             self.proxy_enabled = False
         self.update_proxy_status()
+        # Sets the checkbox state to match the proxy state
+        self.proxy_switch.setChecked(self.proxy_enabled)
 
     def navigate_home(self):
-        self.browser.setUrl(QUrl('https://i2pengine.com'))
+        use_i2p_proxy = self.proxy_switch.isChecked()
+        if use_i2p_proxy:
+            # If the checkbox is checked, use the Legwork I2P URL
+            self.browser.setUrl(QUrl('http://legwork.i2p/'))
+        else:
+            # If the checkbox is unchecked, use the clearnet URL
+            self.browser.setUrl(QUrl('https://i2pengine.com/'))
 
     def navigate_to_url(self):
         url = self.url_bar.text()
@@ -152,15 +161,22 @@ class MainWindow(QMainWindow):
 
     def update_url(self, q):
         url = q.toString()
-        if url == "localhost" or url == "127.0.0.1":
+        parsed_url = urlsplit(url)
+        hostname = parsed_url.hostname
+
+        if url.startswith("https://"):
+            self.url_bar.setStyleSheet("color: green;")
+        elif hostname == "localhost" or hostname == "127.0.0.1":
             self.url_bar.setStyleSheet("color: black;")
         elif "http://127.0.0.1:7657/" in url:
             self.url_bar.setStyleSheet("color: black;")
-        elif url.endswith(".i2p") or url.endswith(".i2p/") or url.startswith("https://"):
+        elif parsed_url.netloc.endswith(".i2p"):
             self.url_bar.setStyleSheet("color: green;")
         else:
-            self.url_bar.setStyleSheet("color: red;")
+            self.url_bar.setStyleSheet("color: red")
+
         self.url_bar.setText(url)
+
 
     def update_proxy_status(self):
         if self.proxy_enabled:
@@ -180,7 +196,7 @@ class MainWindow(QMainWindow):
         self.browser.page().profile().clearAllVisitedLinks()
         event.accept()
 
-app = QApplication(sys.argv)
+app = QApplication(["Browser.py", "--qt-flag", "host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1"])
 QApplication.setApplicationName('I2P Browser')
 window = MainWindow()
 # Loads and sets the application icon

@@ -16,6 +16,7 @@ I2P, which stands for "Invisible Internet Project," is an anonymous network laye
 
     $ git clone https://github.com/Nemesis0U/I2P-Browser.git
     $ cd I2P-Browser/
+    $ sudo apt-get install python3-pyqt5.qtwebengine
     $ pip3 install -r requirements.txt
     $ python3 Browser.py
 
@@ -35,8 +36,7 @@ Step 2:
 
 ### Screenshots:
 
-
-![screenshot](screenshots/screenshot.png)
+![screenshot](screenshots/screenshot3.png)
 
 ![screenshot](screenshots/screenshot2.png)
 
