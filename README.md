@@ -36,7 +36,7 @@ Step 2:
 
 ### Screenshots:
 
-![screenshot](screenshots/screenshot3.png)
+![screenshot](screenshots/screenshot.png)
 
 ![screenshot](screenshots/screenshot2.png)
 
